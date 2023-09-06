@@ -165,8 +165,11 @@ int main(void)
     /* USER CODE BEGIN 3 */
     u16_Change_DutyCycle = u16_Change_Cycle * u16_Change_DutyCycle_Ratio / 100;
     blink_LED();
-    
-    while(!get_Breathing_Status()) BreathingLED();
+    while(!get_Breathing_Status()) {
+      turnon_Signal();
+      BreathingLED();
+      turnoff_Signal();
+    }
   }
   /* USER CODE END 3 */
 }
