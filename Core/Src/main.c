@@ -96,6 +96,16 @@ void handleChangeStatus(uint16_t* dutyCycleRange, uint8_t changeStatus) {
   turnoff_Signal();
 }
 
+void blink_LED() {
+    HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, 1);
+    HAL_Delay(u16_Change_DutyCycle);
+    handleChangeStatus(&u16_Change_DutyCycle_Ratio, get_Change_Status());
+
+    HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, 0);
+    HAL_Delay(u16_Change_Cycle - u16_Change_DutyCycle);
+    handleChangeStatus(&u16_Change_DutyCycle_Ratio, get_Change_Status());
+}
+
 const int8_t base_increment = 1;
 int8_t increment = base_increment;
 void BreathingLED() {
@@ -154,15 +164,8 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
     u16_Change_DutyCycle = u16_Change_Cycle * u16_Change_DutyCycle_Ratio / 100;
-
-    HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, 1);
-    HAL_Delay(u16_Change_DutyCycle);
-    handleChangeStatus(&u16_Change_DutyCycle_Ratio, get_Change_Status());
-
-    HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, 0);
-    HAL_Delay(u16_Change_Cycle - u16_Change_DutyCycle);
-    handleChangeStatus(&u16_Change_DutyCycle_Ratio, get_Change_Status());
-
+    blink_LED();
+    
     while(!get_Breathing_Status()) BreathingLED();
   }
   /* USER CODE END 3 */
