@@ -1,4 +1,4 @@
-blink_led/stm32f1xx_hal_dma.o: \
+[lab3]breathing_led/stm32f1xx_hal_dma.o: \
   ..\Drivers\STM32F1xx_HAL_Driver\Src\stm32f1xx_hal_dma.c \
   ..\Drivers\STM32F1xx_HAL_Driver\Inc\stm32f1xx_hal.h \
   ..\Core\Inc\stm32f1xx_hal_conf.h \

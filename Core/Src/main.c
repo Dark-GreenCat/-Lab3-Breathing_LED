@@ -46,9 +46,9 @@ TIM_HandleTypeDef htim2;
 uint8_t u8_Change_Status;
 uint8_t u8_Breathing_Status;
 
-uint16_t u16_Cycle = 10;
+uint16_t u16_Cycle = 2000;
 uint16_t u16_Cycle_us = 1000;
-uint16_t u16_DutyCycle_Range = 10;
+uint16_t u16_DutyCycle_Ratio = 30;
 uint16_t u16_DutyCycle;
 uint16_t u16_DutyCycle_us;
 
@@ -65,32 +65,45 @@ static void MX_TIM2_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+inline void turnon_Signal() {
+    HAL_GPIO_WritePin(LED_Signal_GPIO_Port, LED_Signal_Pin, 0);
+}
+inline void turnoff_Signal() {
+    HAL_GPIO_WritePin(LED_Signal_GPIO_Port, LED_Signal_Pin, 1);
+}
+
+inline uint8_t get_Change_Status() {
+  return (uint8_t) HAL_GPIO_ReadPin(Change_GPIO_Port, Change_Pin);
+}
+
 void delay_us(uint16_t us) {
   __HAL_TIM_SET_COUNTER(&htim2, 0);  // set the counter value a 0
   while (__HAL_TIM_GET_COUNTER(&htim2) < us);  // wait for the counter to reach the us input in the parameter
 }
 
-void HandleStatus(uint16_t* dutyCycleRange, uint8_t changeStatus) {
+void handleChangeStatus(uint16_t* dutyCycleRange, uint8_t changeStatus) {
   if (!changeStatus) {
+    turnon_Signal();
     while (HAL_GPIO_ReadPin(Change_GPIO_Port, Change_Pin) == changeStatus);
     *dutyCycleRange = (*dutyCycleRange + 20) % 100;
   }
+  turnoff_Signal();
 }
 
 const int8_t base_increment = 1;
 int8_t increment = base_increment;
 void BreathingLED() {
   uint32_t LED_ON_TIME = 10;
-  u16_DutyCycle_us = u16_Cycle_us * u16_DutyCycle_Range / 100;
+  u16_DutyCycle_us = u16_Cycle_us * u16_DutyCycle_Ratio / 100;
   while (LED_ON_TIME--) {
     HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, 1);
     if (u16_DutyCycle_us != 0) delay_us(u16_DutyCycle_us);
     HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, 0);
     if(u16_Cycle_us != u16_DutyCycle_us) delay_us(u16_Cycle_us - u16_DutyCycle_us);
   }
-  u16_DutyCycle_Range = u16_DutyCycle_Range + increment;
-  if (u16_DutyCycle_Range == 0) increment = base_increment;
-  if (u16_DutyCycle_Range == 100) increment = -base_increment;
+  u16_DutyCycle_Ratio = u16_DutyCycle_Ratio + increment;
+  if (u16_DutyCycle_Ratio == 0) increment = base_increment;
+  if (u16_DutyCycle_Ratio == 100) increment = -base_increment;
 }
 /* USER CODE END 0 */
 
@@ -134,18 +147,17 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-    u8_Change_Status = HAL_GPIO_ReadPin(Change_GPIO_Port, Change_Pin);
-    u8_Breathing_Status = HAL_GPIO_ReadPin(Breathing_GPIO_Port, Breathing_Pin);
+    u16_DutyCycle = u16_Cycle * u16_DutyCycle_Ratio / 100;
 
-    // HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, 1);
-    // HAL_Delay(u16_DutyCycle);
-    // HandleStatus(&u16_DutyCycle_Range, u8_Change_Status);
+    HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, 1);
+    HAL_Delay(u16_DutyCycle);
+    handleChangeStatus(&u16_DutyCycle_Ratio, get_Change_Status());
 
-    // HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, 0);
-    // HAL_Delay(u16_Cycle - u16_DutyCycle);
-    // HandleStatus(&u16_DutyCycle_Range, u8_Change_Status);
+    HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, 0);
+    HAL_Delay(u16_Cycle - u16_DutyCycle);
+    handleChangeStatus(&u16_DutyCycle_Ratio, get_Change_Status());
 
-    BreathingLED();
+    //BreathingLED();
   }
   /* USER CODE END 3 */
 }
@@ -246,11 +258,22 @@ static void MX_GPIO_Init(void)
 /* USER CODE END MX_GPIO_Init_1 */
 
   /* GPIO Ports Clock Enable */
+  __HAL_RCC_GPIOC_CLK_ENABLE();
   __HAL_RCC_GPIOD_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(LED_Signal_GPIO_Port, LED_Signal_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOA, LED_PWM_Pin|LED2_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin : LED_Signal_Pin */
+  GPIO_InitStruct.Pin = LED_Signal_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(LED_Signal_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : Change_Pin Breathing_Pin */
   GPIO_InitStruct.Pin = Change_Pin|Breathing_Pin;
