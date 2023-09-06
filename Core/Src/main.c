@@ -46,11 +46,13 @@ TIM_HandleTypeDef htim2;
 uint8_t u8_Change_Status;
 uint8_t u8_Breathing_Status;
 
-uint16_t u16_Cycle = 2000;
-uint16_t u16_Cycle_us = 1000;
-uint16_t u16_DutyCycle_Ratio = 30;
-uint16_t u16_DutyCycle;
-uint16_t u16_DutyCycle_us;
+uint16_t u16_Change_Cycle = 2000;
+uint16_t u16_Change_DutyCycle_Ratio = 30;
+uint16_t u16_Change_DutyCycle;
+
+uint16_t u16_Breathe_Cycle_us = 1000;
+uint16_t u16_Breathe_DutyCycle_Ratio = 10;
+uint16_t u16_Breathe_DutyCycle_us;
 
 uint16_t PerlinTable[] = { 5880,6225,5345,3584,3545,674,5115,598,7795,3737,3775,2129,7527,9020,368,8713,5459,1478,4043,1248,2741,5536,406,3890,1516,9288,904,483,980,7373,330,5766,9555,4694,9058,2971,100,1095,7641,2473,3698,9747,8484,7871,4579,1440,521,1325,2282,6876,1363,3469,9173,5804,2244,3430,6761,866,4885,5306,6646,6531,2703,6799,2933,6416,2818,5230,5421,1938,1134,6455,3048,5689,6148,8943,3277,4349,8866,4770,2397,8177,5191,8905,8522,4120,3622,1670,2205,1861,9479,1631,9441,4005,5574,2167,2588,1057,2512,6263,138,8369,3163,2895,8101,3009,5153,7259,8063,3507,789,6570,7756,7603,5268,5077,4541,7297,6187,3392,6378,3928,4273,7680,6723,7220,215,2550,2091,8407,8752,9670,4847,4809,291,7833,1555,5727,4617,4923,9862,3239,3354,8216,8024,7986,2359,8790,1899,713,2320,751,7067,7335,1172,1708,8637,7105,6608,8254,4655,9594,5919,177,1784,5995,6340,2780,8560,5957,3966,6034,6493,1746,6684,445,5038,942,1593,9785,827,3852,4234,4311,3124,4426,8675,8981,6914,7182,4388,4081,8445,9517,3813,8828,9709,1402,9364,7488,9211,8139,5613,559,7412,6952,6302,9326,3201,2052,5651,9096,9632,636,9249,4196,1976,7450,8292,1287,7029,7718,4158,6110,7144,3316,7909,6838,4502,4732,2014,1823,4962,253,5842,9823,5383,9134,7948,3660,8598,4464,2665,1210,1019,2856,9402,5498,5000,7565,3086,2627,8330,2435,6072,6991 };
 /* USER CODE END PV */
@@ -76,6 +78,10 @@ inline uint8_t get_Change_Status() {
   return (uint8_t) HAL_GPIO_ReadPin(Change_GPIO_Port, Change_Pin);
 }
 
+inline uint8_t get_Breathing_Status() {
+  return (uint8_t) HAL_GPIO_ReadPin(Breathing_GPIO_Port, Breathing_Pin);
+}
+
 void delay_us(uint16_t us) {
   __HAL_TIM_SET_COUNTER(&htim2, 0);  // set the counter value a 0
   while (__HAL_TIM_GET_COUNTER(&htim2) < us);  // wait for the counter to reach the us input in the parameter
@@ -94,16 +100,16 @@ const int8_t base_increment = 1;
 int8_t increment = base_increment;
 void BreathingLED() {
   uint32_t LED_ON_TIME = 10;
-  u16_DutyCycle_us = u16_Cycle_us * u16_DutyCycle_Ratio / 100;
+  u16_Breathe_DutyCycle_us = u16_Breathe_Cycle_us * u16_Breathe_DutyCycle_Ratio / 100;
   while (LED_ON_TIME--) {
     HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, 1);
-    if (u16_DutyCycle_us != 0) delay_us(u16_DutyCycle_us);
+    if (u16_Breathe_DutyCycle_us != 0) delay_us(u16_Breathe_DutyCycle_us);
     HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, 0);
-    if(u16_Cycle_us != u16_DutyCycle_us) delay_us(u16_Cycle_us - u16_DutyCycle_us);
+    if(u16_Breathe_Cycle_us != u16_Breathe_DutyCycle_us) delay_us(u16_Breathe_Cycle_us - u16_Breathe_DutyCycle_us);
   }
-  u16_DutyCycle_Ratio = u16_DutyCycle_Ratio + increment;
-  if (u16_DutyCycle_Ratio == 0) increment = base_increment;
-  if (u16_DutyCycle_Ratio == 100) increment = -base_increment;
+  u16_Breathe_DutyCycle_Ratio += increment;
+  if (u16_Breathe_DutyCycle_Ratio == 0) increment = base_increment;
+  if (u16_Breathe_DutyCycle_Ratio == 100) increment = -base_increment;
 }
 /* USER CODE END 0 */
 
@@ -147,17 +153,17 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-    u16_DutyCycle = u16_Cycle * u16_DutyCycle_Ratio / 100;
+    u16_Change_DutyCycle = u16_Change_Cycle * u16_Change_DutyCycle_Ratio / 100;
 
     HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, 1);
-    HAL_Delay(u16_DutyCycle);
-    handleChangeStatus(&u16_DutyCycle_Ratio, get_Change_Status());
+    HAL_Delay(u16_Change_DutyCycle);
+    handleChangeStatus(&u16_Change_DutyCycle_Ratio, get_Change_Status());
 
     HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, 0);
-    HAL_Delay(u16_Cycle - u16_DutyCycle);
-    handleChangeStatus(&u16_DutyCycle_Ratio, get_Change_Status());
+    HAL_Delay(u16_Change_Cycle - u16_Change_DutyCycle);
+    handleChangeStatus(&u16_Change_DutyCycle_Ratio, get_Change_Status());
 
-    //BreathingLED();
+    while(!get_Breathing_Status()) BreathingLED();
   }
   /* USER CODE END 3 */
 }
