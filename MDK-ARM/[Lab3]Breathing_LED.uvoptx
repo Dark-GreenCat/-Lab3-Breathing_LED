@@ -22,7 +22,7 @@
   </DaveTm>
 
   <Target>
-    <TargetName>Blink_Led</TargetName>
+    <TargetName>[Lab3]Breathing_LED</TargetName>
     <ToolsetNumber>0x4</ToolsetNumber>
     <ToolsetName>ARM-ADS</ToolsetName>
     <TargetOption>
